@@ -1,0 +1,36 @@
+@import './scss/styles';
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	font-family: 'Poppins', sans-serif;
+	color: #555;
+}
+
+h1, h2, h3, h4, h5, h6 {
+	font-weight: bold;
+	margin-top: 0;
+	margin-bottom: 0.5rem;
+	color: #222;
+}
+
+p {
+	margin: 0 0 1rem;
+}
+
+a {
+	text-decoration: none;
+	
+	&:hover {
+		text-decoration: none;
+	}
+}
+
+.container {
+	max-width: 1200px;
+	margin: auto;
+	padding: 0 1rem;
+}
