@@ -30,6 +30,8 @@ function App() {
 	const [callerId, setCallerId] = useState('');
 	const [receivingCall, setReceivingCall] = useState(true);
 
+	const userName = useRef('');
+
 	const [showModal, setShowModal] = useState(false);
 
 	useEffect(() => {
@@ -50,7 +52,8 @@ function App() {
 					console.log('Sending Ice', e);
 					console.log('CallerId', callerId);
 					console.log('userId', userId);
-					socket.current.emit('ice-candidate', { name: userId, candidate: e.candidate });
+					console.log('userName', userName);
+					socket.current.emit('ice-candidate', { name: userName.current, candidate: e.candidate });
 
 				}
 			});
@@ -74,6 +77,7 @@ function App() {
 			console.log('AAAAA', event);
 			console.log('userID', userId);
 			setCallerId(event.from);
+			userName.current = event.from;
 			setReceivingCall(true);
 			setShowModal(true);
 			peerConnection.current.setRemoteDescription(new RTCSessionDescription(event.description));
@@ -84,6 +88,7 @@ function App() {
 			console.log('INANSWERcallerId', callerId);
 			console.log('INANSWERuserId', userId);
 			setCallerId(event.from);
+			userName.current = event.from;
 
 			setShowModal(false);
 			peerConnection.current.setRemoteDescription(new RTCSessionDescription(event.description));
