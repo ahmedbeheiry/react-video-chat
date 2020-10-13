@@ -19,7 +19,7 @@ function App() {
 
 	const localVideoRef = useRef<any>();
 	const remoteVideoRef = useRef<any>();
-	const remoteStream = React.useRef(new MediaStream());
+	// const remoteStream = React.useRef(new MediaStream());
 
 	const iceServers = {
 		iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
@@ -28,24 +28,26 @@ function App() {
 	const [currentUser, setCurrentUser] = useState('');
 	const [usersList, setUsersList] = useState<string[]>([]);
 	const [callerId, setCallerId] = useState('');
-	const [receivingCall, setReceivingCall] = useState(true);
+	const [receivingCall, setReceivingCall] = useState(false);
 	const [showModal, setShowModal] = useState(false);
 	const [callAccepted, setCallAccepted] = useState(false);
+	const [isCalling, setIsCalling] = useState(false);
+
+	const userStream = useRef<any>();
 	
-	
-	
-	const initPeerConnection = async () => {
-		const localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+	const getUserStream = async () => {
+		const localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
 		console.log(localStream);
 		localVideoRef.current.srcObject = localStream;
-		remoteVideoRef.current.srcObject = remoteStream.current;
-
-		localStream.getTracks().forEach((track) => {
-			peerConnection.current.addTrack(track, localStream);
+		userStream.current = localStream;
+		userStream.current.getTracks().forEach((track) => {
+			peerConnection.current.addTrack(track, userStream.current);
 		});
-
+	}
+	
+	const initPeerConnection = async () => {
 		peerConnection.current.addEventListener('track', (e) => {
-			remoteStream.current.addTrack(e.track);
+			remoteVideoRef.current.srcObject = e.streams[0];
 		});
 
 	}
@@ -66,7 +68,7 @@ function App() {
 			peerConnection.current.addIceCandidate(new RTCIceCandidate(data.candidate)) ;
 		});
 
-		socket.current.on('offer', (event) => {
+		socket.current.on('offer', async (event) => {
 			setCallerId(event.from);
 			setReceivingCall(true);
 			setShowModal(true);
@@ -106,6 +108,8 @@ function App() {
 
 		if (inUsersList && friendId !== currentUser) {
 			console.log(`Calling ${friendId}`);
+			await getUserStream();
+			setIsCalling(true);
 			const description = await peerConnection.current.createOffer();
 			peerConnection.current.setLocalDescription(description);
 			socket.current.emit('offer', { name: friendId, from: currentUser, description: description })
@@ -115,46 +119,83 @@ function App() {
 	const acceptCall = async () => {
 		setShowModal(false);
 		setCallAccepted(true);
+		setReceivingCall(false);
+		await getUserStream();
 		const desc = await peerConnection.current.createAnswer();
 		peerConnection.current.setLocalDescription(desc);
 		socket.current.emit('answer', { description: desc, name: callerId, from: currentUser })
 	}
 
-	const rejectCall = () => {}
+	const declineCall = () => {}
 
 	let incomingCall;
 	if (receivingCall) {
 		incomingCall = (
-			<div className='incomingCallContainer'>
-				<div className='incomingCall flex flex-column'>
-					<div>
-						<span className='callerID'>{callerId}</span> is calling you!
+				<div className='incoming-call flex flex-column'>
+					<div className="incoming-call__avatar">
+						<i className="icon icon-user"></i>
 					</div>
-					<div className='incomingCallButtons flex'>
-						<button name='accept' className='alertButtonPrimary' onClick={() => acceptCall()}>
-							Accept
+					<h2 className='incoming-call__username'>{callerId}</h2>
+					<p>is calling you!</p>
+
+					<div className='incoming-call__cta flex'>
+						<button className='btn accept' onClick={acceptCall}>
+							<i className="icon icon-accept"></i>
 						</button>
-						<button name='reject' className='alertButtonSecondary' onClick={() => rejectCall()}>
-							Reject
+						<button className='btn decline' onClick={declineCall}>
+							<i className="icon icon-decline"></i>
 						</button>
 					</div>
 				</div>
-			</div>
 		);
+	}
+		// incomingCall = (
+		// 	<div className='incomingCallContainer'>
+		// 		<div className='incomingCall flex flex-column'>
+		// 			<div>
+		// 				<span className='callerID'>{callerId}</span> is calling you!
+		// 			</div>
+		// 			<div className='incomingCallButtons flex'>
+		// 				<button name='accept' className='alertButtonPrimary' onClick={() => acceptCall()}>
+		// 					Accept
+		// 				</button>
+		// 				<button name='reject' className='alertButtonSecondary' onClick={() => declineCall()}>
+		// 					Reject
+		// 				</button>
+		// 			</div>
+		// 		</div>
+		// 	</div>
+		// );
+
+	const renderConference = () => {
+		return isCalling || callAccepted;
 	}
 
 	return (
 		<React.Fragment>
-			<HeaderComponent />
 
-			<ContactComponent userName={currentUser} callFriend={handleCallFriend} />
+			<div style={{ display: renderConference() ? 'none' : "block" }}>
+				<HeaderComponent />
+				<ContactComponent userName={currentUser} callFriend={handleCallFriend} />
+			</div>
 
-			{/* <ConferenceComponent /> */}
+			{incomingCall}
 
-			<video ref={localVideoRef} autoPlay style={{ width: 250, height: 250 }}></video>
-			<video style={{ width: 250, height: 250, background: 'black' }} autoPlay ref={remoteVideoRef} />
+			<div className="call-wrapper" style={{ display: renderConference() ? 'block' : "none" }}>
+				<div className="local-video-wrapper">
+					<video ref={localVideoRef} autoPlay />
+				</div>
+				<div className="remote-video-wrapper">
+					<video ref={remoteVideoRef} autoPlay />
+				</div>
 
-			<div>
+				<button className="end-call">
+					<i className="icon icon-decline"></i>
+				</button>
+			</div>
+
+
+			{/* <div>
 				<Rodal
 					visible={showModal}
 					showCloseButton={false}
@@ -163,7 +204,7 @@ function App() {
 				>
 					<div>{incomingCall}</div>
 				</Rodal>
-			</div>
+			</div> */}
 		</React.Fragment>
 	);
 }
