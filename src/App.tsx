@@ -21,9 +21,23 @@ function App() {
 	const remoteVideoRef = useRef<any>();
 	// const remoteStream = React.useRef(new MediaStream());
 
+	// const iceServers = {
+	// 	iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+	// };
 	const iceServers = {
-		iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
-	};
+		iceServers: [
+			{
+				urls: "stun:numb.viagenie.ca",
+				username: "sultan1640@gmail.com",
+				credential: "98376683"
+			},
+			{
+				urls: "turn:numb.viagenie.ca",
+				username: "sultan1640@gmail.com",
+				credential: "98376683"
+			}
+		]
+	}
 	const peerConnection = useRef(new RTCPeerConnection(iceServers));
 	const [currentUser, setCurrentUser] = useState('');
 	const [usersList, setUsersList] = useState<string[]>([]);
