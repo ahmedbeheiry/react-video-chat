@@ -33,6 +33,7 @@ function App() {
 	const [callAccepted, setCallAccepted] = useState(false);
 	const [isCalling, setIsCalling] = useState(false);
 
+	const localStream = useRef<any>();
 	const userStream = useRef<any>();
 	
 	const getUserStream = async () => {
@@ -108,7 +109,20 @@ function App() {
 
 		if (inUsersList && friendId !== currentUser) {
 			console.log(`Calling ${friendId}`);
-			await getUserStream();
+			// await getUserStream();
+
+			const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+			console.log(stream);
+			localVideoRef.current.srcObject = stream;
+			localStream.current = stream;
+			// userStream.current = localStream;
+
+			localStream.current.getTracks().forEach(track => 
+				peerConnection.current.addTrack(track, localStream.current)
+			);
+			console.log('Added local stream to pc1');
+
+
 			setIsCalling(true);
 			const description = await peerConnection.current.createOffer();
 			peerConnection.current.setLocalDescription(description);
@@ -120,7 +134,35 @@ function App() {
 		setShowModal(false);
 		setCallAccepted(true);
 		setReceivingCall(false);
-		await getUserStream();
+		// await getUserStream();
+		// userStream.current = new MediaStream();
+		// userStream.current.getTracks().forEach((track) => {
+		// 	console.log('TRR');
+		// 	// peerConnection.current.addTrack(track, userStream.current);
+		// });
+
+		console.log('ACEPT BEFORE');
+
+		try {
+			
+			const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+				console.log(stream);
+		} catch (error) {
+			console.log(error)
+		}
+
+		// 	localVideoRef.current.srcObject = stream;
+		// 	localStream.current = stream;
+		// 	// userStream.current = localStream;
+
+		// 	localStream.current.getTracks().forEach(track => 
+		// 		peerConnection.current.addTrack(track, localStream.current)
+		// 	);
+		
+		peerConnection.current.addEventListener('track', (e) => {
+			console.log('EEEE', e);
+			remoteVideoRef.current.srcObject = e.streams[0];
+		});
 		const desc = await peerConnection.current.createAnswer();
 		peerConnection.current.setLocalDescription(desc);
 		socket.current.emit('answer', { description: desc, name: callerId, from: currentUser })
