@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import Rodal from 'rodal';
+// import Rodal from 'rodal';
 import io from 'socket.io-client';
 
 import HeaderComponent from './components/header/header.component';
@@ -29,22 +29,22 @@ function App() {
 	const [usersList, setUsersList] = useState<string[]>([]);
 	const [callerId, setCallerId] = useState('');
 	const [receivingCall, setReceivingCall] = useState(false);
-	const [showModal, setShowModal] = useState(false);
+	const [, setShowModal] = useState(false);
 	const [callAccepted, setCallAccepted] = useState(false);
 	const [isCalling, setIsCalling] = useState(false);
 
 	const localStream = useRef<any>();
-	const userStream = useRef<any>();
+	// const userStream = useRef<any>();
 	
-	const getUserStream = async () => {
-		const localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-		console.log(localStream);
-		localVideoRef.current.srcObject = localStream;
-		userStream.current = localStream;
-		userStream.current.getTracks().forEach((track) => {
-			peerConnection.current.addTrack(track, userStream.current);
-		});
-	}
+	// const getUserStream = async () => {
+	// 	const localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+	// 	console.log(localStream);
+	// 	localVideoRef.current.srcObject = localStream;
+	// 	userStream.current = localStream;
+	// 	userStream.current.getTracks().forEach((track) => {
+	// 		peerConnection.current.addTrack(track, userStream.current);
+	// 	});
+	// }
 	
 	const initPeerConnection = async () => {
 		peerConnection.current.addEventListener('track', (e) => {
