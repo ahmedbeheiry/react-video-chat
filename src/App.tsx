@@ -22,62 +22,52 @@ function App() {
 	const remoteStream = React.useRef(new MediaStream());
 
 	const iceServers = {
-		iceServers: [{ urls: 'stun:stun.services.mozilla.com' }, { urls: 'stun:stun.l.google.com:19302' }],
+		iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
 	};
 	const peerConnection = useRef(new RTCPeerConnection(iceServers));
-	const [userId, setUserId] = useState('');
+	const [currentUser, setCurrentUser] = useState('');
 	const [usersList, setUsersList] = useState<string[]>([]);
 	const [callerId, setCallerId] = useState('');
 	const [receivingCall, setReceivingCall] = useState(true);
-
-	const userName = useRef('');
-
 	const [showModal, setShowModal] = useState(false);
+	const [callAccepted, setCallAccepted] = useState(false);
+	
+	
+	
+	const initPeerConnection = async () => {
+		const localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+		console.log(localStream);
+		localVideoRef.current.srcObject = localStream;
+		remoteVideoRef.current.srcObject = remoteStream.current;
 
-	useEffect(() => {
+		localStream.getTracks().forEach((track) => {
+			peerConnection.current.addTrack(track, localStream);
+		});
+
+		peerConnection.current.addEventListener('track', (e) => {
+			remoteStream.current.addTrack(e.track);
+		});
+
+	}
+
+	const initSocketConnection = () => {
 		socket.current = io.connect(socketURL);
-
-		(async () => {
-			const localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-			console.log(localStream);
-			localVideoRef.current.srcObject = localStream;
-			remoteVideoRef.current.srcObject = remoteStream.current;
-
-			localStream.getTracks().forEach((track) => {
-				peerConnection.current.addTrack(track, localStream);
-			});
-
-			peerConnection.current.addEventListener('icecandidate', (e) => {
-				if (e.candidate) {
-					console.log('Sending Ice', e);
-					console.log('CallerId', callerId);
-					console.log('userId', userId);
-					console.log('userName', userName);
-					socket.current.emit('ice-candidate', { name: userName.current, candidate: e.candidate });
-
-				}
-			});
-
-			peerConnection.current.addEventListener('track', (e) => {
-				remoteStream.current.addTrack(e.track);
-			});
-		})();
-
+		
 		socket.current.on('conn-success', (data: SocketUser) => {
-			console.log('CurrentUser', data);
-			setUserId(data.name);
+			setCurrentUser(data.name);
 		});
 
 		socket.current.on('users-list', (list: string[]) => {
-			console.log('UsersList', list);
 			setUsersList(list);
 		});
 
+		socket.current.on("ice-candidate", (data) => {
+			console.log("Candidate ",data);
+			peerConnection.current.addIceCandidate(new RTCIceCandidate(data.candidate)) ;
+		});
+
 		socket.current.on('offer', (event) => {
-			console.log('AAAAA', event);
-			console.log('userID', userId);
 			setCallerId(event.from);
-			userName.current = event.from;
 			setReceivingCall(true);
 			setShowModal(true);
 			peerConnection.current.setRemoteDescription(new RTCSessionDescription(event.description));
@@ -85,42 +75,49 @@ function App() {
 
 		socket.current.on('answer', (event) => {
 			console.log('ANSWER', event);
-			console.log('INANSWERcallerId', callerId);
-			console.log('INANSWERuserId', userId);
 			setCallerId(event.from);
-			userName.current = event.from;
-
 			setShowModal(false);
 			peerConnection.current.setRemoteDescription(new RTCSessionDescription(event.description));
 		});
+	}
 
-		socket.current.on("ice-candidate", (data) => {
-			console.log("Candidate ",data);
-			peerConnection.current.addIceCandidate(new RTCIceCandidate(data.candidate)) ;
+	useEffect(() => {
+		initPeerConnection();
+		initSocketConnection();
+	}, []);
+
+	useEffect(() => {
+		if(!callerId){
+            return ;
+		}
+		peerConnection.current.addEventListener('icecandidate', (e) => { // Logical place to start listening on this is when you got an id from server (Not here) ,But I made it like that to illustrate the concept of closures (The problem that faced us today)
+			if (e.candidate) {
+				console.log('Sending Ice', e);
+				socket.current.emit('ice-candidate', { name: callerId, candidate: e.candidate });
+			}
 		});
 		  
-	}, []);
+	},[callerId]);
+
 
 	const handleCallFriend = async (friendId: string) => {
 		console.log(usersList);
 		const inUsersList = usersList.some((user) => user === friendId);
 
-		if (inUsersList && friendId !== userId) {
+		if (inUsersList && friendId !== currentUser) {
 			console.log(`Calling ${friendId}`);
 			const description = await peerConnection.current.createOffer();
 			peerConnection.current.setLocalDescription(description);
-
-			console.log('Desc', description);
-			socket.current.emit('offer', { name: friendId, from: userId, description: description })
+			socket.current.emit('offer', { name: friendId, from: currentUser, description: description })
 		}
 	};
 
 	const acceptCall = async () => {
+		setShowModal(false);
+		setCallAccepted(true);
 		const desc = await peerConnection.current.createAnswer();
 		peerConnection.current.setLocalDescription(desc);
-		console.log('EMITANSWERcallerId', callerId);
-		console.log('EMITANSWERuserId', userId);
-		socket.current.emit('answer', { description: desc, name: callerId, from: userId })
+		socket.current.emit('answer', { description: desc, name: callerId, from: currentUser })
 	}
 
 	const rejectCall = () => {}
@@ -150,17 +147,20 @@ function App() {
 		<React.Fragment>
 			<HeaderComponent />
 
-			<ContactComponent userName={userId} callFriend={handleCallFriend} />
+			<ContactComponent userName={currentUser} callFriend={handleCallFriend} />
 
 			{/* <ConferenceComponent /> */}
-
-			{incomingCall}
 
 			<video ref={localVideoRef} autoPlay style={{ width: 250, height: 250 }}></video>
 			<video style={{ width: 250, height: 250, background: 'black' }} autoPlay ref={remoteVideoRef} />
 
 			<div>
-				<Rodal visible={showModal} onClose={() => setShowModal(false)}>
+				<Rodal
+					visible={showModal}
+					showCloseButton={false}
+					closeMaskOnClick={false}
+					onClose={() => setShowModal(false)}
+				>
 					<div>{incomingCall}</div>
 				</Rodal>
 			</div>
