@@ -1,17 +1,23 @@
 import React, { useEffect, useRef, useState } from 'react';
-// import Rodal from 'rodal';
 import io from 'socket.io-client';
-
+import { Howl } from 'howler';
 import HeaderComponent from './components/header/header.component';
-
+import ContactComponent from './components/contact/contact.component';
 import './App.scss';
 import 'rodal/lib/rodal.css';
-import ContactComponent from './components/contact/contact.component';
+
+const ringtone = require('./sound/ringtone.mp3');
 
 interface SocketUser {
 	name: string;
 	socketId: string;
 }
+
+const ringtoneSound = new Howl({
+	src: ringtone,
+	loop: true,
+	preload: true
+});
 
 function App() {
 	const socketURL = 'https://webrtc-server-api.herokuapp.com/';
@@ -19,7 +25,6 @@ function App() {
 
 	const localVideoRef = useRef<any>();
 	const remoteVideoRef = useRef<any>();
-	// const remoteStream = React.useRef(new MediaStream());
 
 	const iceServers = {
 		iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
@@ -29,7 +34,6 @@ function App() {
 	const [usersList, setUsersList] = useState<string[]>([]);
 	const [callerId, setCallerId] = useState('');
 	const [receivingCall, setReceivingCall] = useState(false);
-	// const [showModal, setShowModal] = useState(false);
 	const [callAccepted, setCallAccepted] = useState(false);
 	const [isCalling, setIsCalling] = useState(false);
 
@@ -71,22 +75,21 @@ function App() {
 		socket.current.on('offer', async (event) => {
 			setCallerId(event.from);
 			setReceivingCall(true);
-			// setShowModal(true);
+			ringtoneSound.play();
 			peerConnection.current.setRemoteDescription(new RTCSessionDescription(event.description));
 		});
 
 		socket.current.on('answer', (event) => {
 			console.log('ANSWER', event);
 			setCallerId(event.from);
-			// setShowModal(false);
 			peerConnection.current.setRemoteDescription(new RTCSessionDescription(event.description));
 		});
 
-		socket.current.on('reject', (event) => {
+		socket.current.on('reject', () => {
 			window.location.reload();
 		});
 
-		socket.current.on('cancel', (event) => {
+		socket.current.on('cancel', () => {
 			window.location.reload();
 		})
 	}
@@ -126,9 +129,9 @@ function App() {
 	};
 
 	const acceptCall = async () => {
-		// setShowModal(false);
 		setCallAccepted(true);
 		setReceivingCall(false);
+		ringtoneSound.stop();
 		await getUserStream();
 		const desc = await peerConnection.current.createAnswer();
 		peerConnection.current.setLocalDescription(desc);
@@ -150,22 +153,22 @@ function App() {
 	let incomingCall;
 	if (receivingCall) {
 		incomingCall = (
-				<div className='incoming-call flex flex-column'>
-					<div className="incoming-call__avatar">
-						<i className="icon icon-user"></i>
-					</div>
-					<h2 className='incoming-call__username'>{callerId}</h2>
-					<p>is calling you!</p>
-
-					<div className='incoming-call__cta flex'>
-						<button className='btn accept' onClick={acceptCall}>
-							<i className="icon icon-accept"></i>
-						</button>
-						<button className='btn decline' onClick={handleDeclineCall}>
-							<i className="icon icon-decline"></i>
-						</button>
-					</div>
+			<div className='incoming-call flex flex-column'>
+				<div className="incoming-call__avatar">
+					<i className="icon icon-user"></i>
 				</div>
+				<h2 className='incoming-call__username'>{callerId}</h2>
+				<p>is calling you!</p>
+
+				<div className='incoming-call__cta flex'>
+					<button className='btn accept' onClick={acceptCall}>
+						<i className="icon icon-accept"></i>
+					</button>
+					<button className='btn decline' onClick={handleDeclineCall}>
+						<i className="icon icon-decline"></i>
+					</button>
+				</div>
+			</div>
 		);
 	}
 
@@ -199,18 +202,6 @@ function App() {
 					<i className="icon icon-decline"></i>
 				</button>
 			</div>
-
-
-			{/* <div>
-				<Rodal
-					visible={showModal}
-					showCloseButton={false}
-					closeMaskOnClick={false}
-					onClose={() => setShowModal(false)}
-				>
-					<div>{incomingCall}</div>
-				</Rodal>
-			</div> */}
 		</React.Fragment>
 	);
 }
