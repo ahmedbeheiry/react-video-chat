@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import Rodal from 'rodal';
+// import Rodal from 'rodal';
 import io from 'socket.io-client';
 
 import HeaderComponent from './components/header/header.component';
@@ -29,7 +29,7 @@ function App() {
 	const [usersList, setUsersList] = useState<string[]>([]);
 	const [callerId, setCallerId] = useState('');
 	const [receivingCall, setReceivingCall] = useState(false);
-	const [showModal, setShowModal] = useState(false);
+	// const [showModal, setShowModal] = useState(false);
 	const [callAccepted, setCallAccepted] = useState(false);
 	const [isCalling, setIsCalling] = useState(false);
 
@@ -71,16 +71,24 @@ function App() {
 		socket.current.on('offer', async (event) => {
 			setCallerId(event.from);
 			setReceivingCall(true);
-			setShowModal(true);
+			// setShowModal(true);
 			peerConnection.current.setRemoteDescription(new RTCSessionDescription(event.description));
 		});
 
 		socket.current.on('answer', (event) => {
 			console.log('ANSWER', event);
 			setCallerId(event.from);
-			setShowModal(false);
+			// setShowModal(false);
 			peerConnection.current.setRemoteDescription(new RTCSessionDescription(event.description));
 		});
+
+		socket.current.on('reject', (event) => {
+			window.location.reload();
+		});
+
+		socket.current.on('cancel', (event) => {
+			window.location.reload();
+		})
 	}
 
 	useEffect(() => {
@@ -110,6 +118,7 @@ function App() {
 			console.log(`Calling ${friendId}`);
 			await getUserStream();
 			setIsCalling(true);
+			setCallerId(friendId);
 			const description = await peerConnection.current.createOffer();
 			peerConnection.current.setLocalDescription(description);
 			socket.current.emit('offer', { name: friendId, from: currentUser, description: description })
@@ -117,7 +126,7 @@ function App() {
 	};
 
 	const acceptCall = async () => {
-		setShowModal(false);
+		// setShowModal(false);
 		setCallAccepted(true);
 		setReceivingCall(false);
 		await getUserStream();
@@ -126,7 +135,17 @@ function App() {
 		socket.current.emit('answer', { description: desc, name: callerId, from: currentUser })
 	}
 
-	const declineCall = () => {}
+	const handleDeclineCall = () => {
+		console.log('Cancel CALL from', callerId);
+		socket.current.emit('reject', { from: currentUser, name: callerId, reject: true });
+		window.location.reload();
+	}
+
+	const handleEndCall = () => {
+		console.log(`End call with ${callerId}`);
+		socket.current.emit('cancel', { from: currentUser, name: callerId, cancel: true });
+		window.location.reload();
+	}
 
 	let incomingCall;
 	if (receivingCall) {
@@ -142,46 +161,33 @@ function App() {
 						<button className='btn accept' onClick={acceptCall}>
 							<i className="icon icon-accept"></i>
 						</button>
-						<button className='btn decline' onClick={declineCall}>
+						<button className='btn decline' onClick={handleDeclineCall}>
 							<i className="icon icon-decline"></i>
 						</button>
 					</div>
 				</div>
 		);
 	}
-		// incomingCall = (
-		// 	<div className='incomingCallContainer'>
-		// 		<div className='incomingCall flex flex-column'>
-		// 			<div>
-		// 				<span className='callerID'>{callerId}</span> is calling you!
-		// 			</div>
-		// 			<div className='incomingCallButtons flex'>
-		// 				<button name='accept' className='alertButtonPrimary' onClick={() => acceptCall()}>
-		// 					Accept
-		// 				</button>
-		// 				<button name='reject' className='alertButtonSecondary' onClick={() => declineCall()}>
-		// 					Reject
-		// 				</button>
-		// 			</div>
-		// 		</div>
-		// 	</div>
-		// );
 
 	const renderConference = () => {
 		return isCalling || callAccepted;
 	}
 
+	const renderLandingPage = () => {
+		return !isCalling && !receivingCall && !callAccepted;
+	}
+
 	return (
 		<React.Fragment>
 
-			<div style={{ display: renderConference() ? 'none' : "block" }}>
+			<div style={{ display: renderLandingPage() ? 'block' : 'none' }}>
 				<HeaderComponent />
 				<ContactComponent userName={currentUser} callFriend={handleCallFriend} />
 			</div>
 
 			{incomingCall}
 
-			<div className="call-wrapper" style={{ display: renderConference() ? 'block' : "none" }}>
+			<div className="call-wrapper" style={{ display: renderConference() ? 'block' : 'none' }}>
 				<div className="local-video-wrapper">
 					<video ref={localVideoRef} autoPlay />
 				</div>
@@ -189,7 +195,7 @@ function App() {
 					<video ref={remoteVideoRef} autoPlay />
 				</div>
 
-				<button className="end-call">
+				<button className="end-call" onClick={handleEndCall}>
 					<i className="icon icon-decline"></i>
 				</button>
 			</div>
