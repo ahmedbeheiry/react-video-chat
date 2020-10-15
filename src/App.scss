@@ -29,6 +29,10 @@ a {
 	}
 }
 
+button {
+	cursor: pointer;
+}
+
 .container {
 	max-width: 1200px;
 	margin: auto;
@@ -47,7 +51,7 @@ a {
 		position: absolute;
 		width: 60px;
 		height: 60px;
-		bottom: 2rem;
+		bottom: 6rem;
 		left: 50%;
 		font-size: 2.5rem;
 		padding: 0;
@@ -58,6 +62,91 @@ a {
 		border-radius: 50%;
 		outline: none;
 		cursor: pointer;
+	}
+
+	.text-chat {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		position: absolute;
+		right: 0;
+		left: 0;
+		bottom: 2rem;
+		padding: 0 2rem;
+
+		&__input {
+			background-color: rgba(255, 255, 255, 0.25);
+			border: none;
+			flex: 1;
+			border-radius: 30px;
+			resize: none;
+			margin-right: 1rem;
+			height: 45px;
+			outline: none;
+			color: #fff;
+			padding: 0 1rem;
+		}
+
+		&__btn {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			width: 45px;
+			height: 45px;
+			border-radius: 50%;
+			background-color: $main_color;
+			color: #fff;
+			font-size: 1.4rem;
+			border: none;
+			outline: none;
+		}
+	}
+
+	.messages-box{
+		position: absolute;
+		bottom: 11rem;
+		left: 2rem;
+		width: 70%;
+		max-width: 350px;
+		height: 300px;
+		// max-height: 300px;
+		overflow: auto;
+		color: #d6d6d6;
+		background-color: rgba(255, 255, 255, .15);
+		list-style: none;
+		padding: 1rem;
+		margin: 0;
+		border-radius: 5px;
+		z-index: 5;
+
+		li {
+			display: flex;
+			margin-bottom: 1rem;
+		}
+
+		.avatar {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			width: 40px;
+			height: 40px;
+			border-radius: 50%;
+			margin-right: 1rem;
+			background: rgba(0, 0, 0, .33);
+			color: #fff;
+		}
+
+		.sender-data {
+			.name {
+				color: #fff;
+				margin-bottom: 0.2rem;
+			}
+
+			.content {
+				font-size: .85rem;
+				margin-bottom: 0;
+			}
+		}
 	}
 }
 
