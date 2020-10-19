@@ -139,15 +139,15 @@ function App() {
 	}
 
 	const scrollToBottom = () => {
-		// messaesBoxRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-		messaesBoxRef.current.scrollTop = (messaesBoxRef.current.scrollHeight + 200);
-		console.log(messaesBoxRef.current.scrollTop);
-		console.log(messaesBoxRef.current.scrollHeight);
-		// messaesBoxRef.current.scrollTo({
-		// 	bottom: 0,
-		// 	left: 0,
-		// 	behavior: 'smooth'
-		//   });
+		setTimeout(() => {
+			messaesBoxRef.current.scrollTop = (messaesBoxRef.current.scrollHeight);
+				messaesBoxRef.current.scrollTo({
+				bottom: 0,
+				left: 0,
+				behavior: 'smooth'
+		  });
+		}, 0);
+
 	}
 
 	const sendTextMessage = () => {
@@ -231,6 +231,13 @@ function App() {
 		return !isCalling && !receivingCall && !callAccepted;
 	}
 
+	const handleKeyDown = (e) => {
+		// If Enter key
+		if (e.keyCode === 13) {
+			sendTextMessage();
+		}
+	}
+
 	return (
 		<React.Fragment>
 
@@ -256,14 +263,22 @@ function App() {
 							<i className="icon icon-user"></i>
 						</div>
 						<div className="sender-data">
-							<h5 className="name">Ahmed</h5>
+							<h5 className="name">{msg.mine ? `${currentUser} (You)` : callerId}</h5>
 							<p className="content">{msg.data}</p>
 						</div>
 					</li>)}
 				</ul>
 
 				<div className="text-chat">
-					<input className="text-chat__input" name="chat" id="chat_text" value={text} onChange={(e) => setText(e.target.value)} />
+					<input
+						className="text-chat__input"
+						name="chat"
+						id="chat_text"
+						value={text}
+						autoFocus
+						onChange={(e) => setText(e.target.value)}
+						onKeyDown={handleKeyDown}
+					/>
 					<button className="text-chat__btn" onClick={sendTextMessage}>
 						<i className="icon icon-send"></i>
 					</button>
