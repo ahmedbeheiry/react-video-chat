@@ -116,7 +116,8 @@ function App() {
 	useEffect(() => {
 		initPeerConnection();
 		initSocketConnection();
-	});
+		/* eslint-disable react-hooks/exhaustive-deps */
+	}, []);
 
 	useEffect(() => {
 		if(!callerId){
