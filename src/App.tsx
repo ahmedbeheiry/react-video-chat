@@ -49,7 +49,7 @@ function App() {
 	const messaesBoxRef = useRef<any>(null);
 	
 	const getUserStream = async () => {
-		const localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+		const localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
 		console.log(localStream);
 		localVideoRef.current.srcObject = localStream;
 		userStream.current = localStream;
@@ -110,7 +110,7 @@ function App() {
 
 		socket.current.on('cancel', () => {
 			window.location.reload();
-		})
+		});
 	}
 
 	useEffect(() => {
@@ -180,7 +180,7 @@ function App() {
 	const acceptCall = async () => {
 		setCallAccepted(true);
 		setReceivingCall(false);
-		ringtoneSound.stop();
+		ringtoneSound.unload();
 		await getUserStream();
 		const desc = await peerConnection.current.createAnswer();
 		peerConnection.current.setLocalDescription(desc);
@@ -188,6 +188,7 @@ function App() {
 	}
 
 	const handleDeclineCall = () => {
+		ringtoneSound.unload();
 		console.log('Cancel CALL from', callerId);
 		socket.current.emit('reject', { from: currentUser, name: callerId, reject: true });
 		window.location.reload();
@@ -200,7 +201,7 @@ function App() {
 	}
 
 	let incomingCall;
-	if (receivingCall) {
+	if (receivingCall && !callAccepted) {
 		incomingCall = (
 			<div className='incoming-call flex flex-column'>
 				<div className="incoming-call__avatar">
@@ -242,7 +243,7 @@ function App() {
 			{/* <div className="call-wrapper" > */}
 			<div className="call-wrapper" style={{ display: renderConference() ? 'block' : 'none' }}>
 				<div className="local-video-wrapper">
-					<video ref={localVideoRef} autoPlay />
+					<video ref={localVideoRef} muted autoPlay />
 				</div>
 				<div className="remote-video-wrapper">
 					<video ref={remoteVideoRef} autoPlay />
