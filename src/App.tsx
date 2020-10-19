@@ -116,7 +116,7 @@ function App() {
 	useEffect(() => {
 		initPeerConnection();
 		initSocketConnection();
-	}, []);
+	});
 
 	useEffect(() => {
 		if(!callerId){
